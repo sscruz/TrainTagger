@@ -485,8 +485,6 @@ def basic(model_dir):
     #Load the testing data
     X_test = np.load(f"{model_dir}/testing_data/X_test.npy")
     y_test = np.load(f"{model_dir}/testing_data/y_test.npy")
-    truth_pt_test = np.load(f"{model_dir}/testing_data/truth_pt_test.npy")
-    reco_pt_test = np.load(f"{model_dir}/testing_data/reco_pt_test.npy")
     
     #Load model
     model = load_qmodel(f"{model_dir}/model/saved_model.h5")
@@ -510,16 +508,16 @@ def basic(model_dir):
     ROC_taus(y_pred, y_test, class_labels, plot_dir)
 
     #Plot pt corrections
-    pt_correction_hist(pt_ratio, truth_pt_test, reco_pt_test, plot_dir)
+    #pt_correction_hist(pt_ratio, truth_pt_test, reco_pt_test, plot_dir)
 
     #Plot input distributions
     plot_input_vars(X_test, input_vars, plot_dir)
 
     #Plot inclusive response and individual flavor
-    response(class_labels, y_test, truth_pt_test, reco_pt_test, pt_ratio, plot_dir)
+    #response(class_labels, y_test, truth_pt_test, reco_pt_test, pt_ratio, plot_dir)
     
     #Plot the rms of the residuals vs pt
-    rms(class_labels, y_test, truth_pt_test, reco_pt_test, pt_ratio, plot_dir)
+    #rms(class_labels, y_test, truth_pt_test, reco_pt_test, pt_ratio, plot_dir)
     
     #Plot the shaply feature importance
     plot_shaply(model, X_test, class_labels, input_vars, plot_dir)

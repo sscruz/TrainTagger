@@ -10,7 +10,7 @@ from qkeras.qlayers import QDense, QActivation
 from qkeras import QConv1D
 
 
-def baseline(inputs_shape, output_shape, bits=9, bits_int=2, alpha_val=1):
+def baseline(inputs_shape, inputs_global_shape, output_shape, bits=9, bits_int=2, alpha_val=1):
 
     # Define a dictionary for common arguments
     common_args = {
@@ -20,7 +20,8 @@ def baseline(inputs_shape, output_shape, bits=9, bits_int=2, alpha_val=1):
     }
 
     #Initialize inputs
-    inputs = tf.keras.layers.Input(shape=inputs_shape, name='model_input')
+    inputs        = tf.keras.layers.Input(shape=inputs_shape       , name='model_input')
+    inputs_global = tf.keras.layers.Input(shape=inputs_global_shape, name='model_global_input')
 
     #Main branch
     main = BatchNormalization(name='norm_input')(inputs)
@@ -37,29 +38,21 @@ def baseline(inputs_shape, output_shape, bits=9, bits_int=2, alpha_val=1):
     main = QActivation(activation='quantized_bits(18,8)', name = 'act_pool')(main)
     main = GlobalAveragePooling1D(name='avgpool')(main)
 
-    #Now split into jet ID and pt regression
+    # now merge the deepsets with the global
+    main = tf.keras.layers.Concatenate(axis=1)([main, inputs_global])
 
-    #jetID branch, 3 layer MLP
-    jet_id = QDense(32, name='Dense_1_jetID', **common_args)(main)
-    jet_id = QActivation(activation=quantized_relu(bits), name='relu_1_jetID')(jet_id)
+    main = QDense(32, name='Dense_1_main', **common_args)(main)
+    main = QActivation(activation=quantized_relu(bits), name='relu_1_main')(main)
 
-    jet_id = QDense(16, name='Dense_2_jetID', **common_args)(jet_id)
-    jet_id = QActivation(activation=quantized_relu(bits), name='relu_2_jetID')(jet_id)
+    main = QDense(16, name='Dense_2_main', **common_args)(main)
+    main = QActivation(activation=quantized_relu(bits), name='relu_2_main')(main)
 
-    jet_id = QDense(output_shape[0], name='Dense_3_jetID', **common_args)(jet_id)
-    jet_id = Activation('softmax', name='jet_id_output')(jet_id)
+    main = QDense(output_shape[0], name='Dense_3_main', **common_args)(main)
+    main = Activation('softmax', name='main_output')(main)
 
-    #pT regression branch
-    pt_regress = QDense(10, name='Dense_1_pT', **common_args)(main)
-    pt_regress = QActivation(activation=quantized_relu(bits), name='relu_1_pt')(pt_regress)
-
-    pt_regress = QDense(1, name='pT_output',
-                        kernel_quantizer=quantized_bits(16, 6, alpha=alpha_val),
-                        bias_quantizer=quantized_bits(16, 6, alpha=alpha_val),
-                        kernel_initializer='lecun_uniform')(pt_regress)
-
+    
     #Define the model using both branches
-    model = tf.keras.Model(inputs = inputs, outputs = [jet_id, pt_regress])
+    model = tf.keras.Model(inputs = [inputs, inputs_global], outputs = [main])
 
     print(model.summary())
 

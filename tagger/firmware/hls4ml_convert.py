@@ -45,11 +45,8 @@ def convert(model, outpath,build=True):
         else:
             config["LayerName"][layer.name]["Trace"] = trace
 
-    
-    config["LayerName"]["jet_id_output"]["Precision"]["result"] = class_precision
-    config["LayerName"]["jet_id_output"]["Implementation"] = "latency"
-    config["LayerName"]["pT_output"]["Precision"]["result"] = reg_precision
-    config["LayerName"]["pT_output"]["Implementation"] = "latency"
+    config["LayerName"]["main_output"]["Precision"]["result"] = class_precision
+    config["LayerName"]["main_output"]["Implementation"] = "latency"
 
     #Save config  as json file
     print("Saving default config as config.json ...")
@@ -63,12 +60,13 @@ def convert(model, outpath,build=True):
                                                        hls_config=config,
                                                        output_dir=f'{outpath}',
                                                        part='xcvu9p-flga2104-2L-e')
-
+    hls4ml.utils.fetch_example_list()
 
     #Compile and build the project
     hls_model.compile()
     if build == True:
-        #hls_model.build(csim=False, reset = True)
+        hls_model.build()#csim=False, reset = True)
+        hls4ml.report.read_vivado_report('my-hls-test')
         return [input_precision,class_precision,reg_precision]
     else:
         return hls_model

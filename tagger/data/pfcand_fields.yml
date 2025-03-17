@@ -1,77 +1,3 @@
-pfcand_fields_all:
-  - puppiweight
-  - pt_rel
-  - pt_rel_log
-  - pt_rel_phys
-  - pt
-  - pt_phys
-  - dxy
-  - dxy_phys
-  - dxy_physSquared
-  - dxy_custom
-  - id
-  - charge
-  - pperp_ratio
-  - ppara_ratio
-  - deta
-  - dphi
-  - deta_phys
-  - dphi_phys
-  - etarel
-  - track_chi2
-  - track_chi2norm
-  - track_qual
-  - track_npar
-  - track_vx
-  - track_vy
-  - track_vz
-  - track_pterror
-  - cluster_hovere
-  - cluster_sigmarr
-  - cluster_abszbarycenter
-  - cluster_emet
-  - pt_log
-  - eta
-  - phi
-  - eta_phys
-  - phi_phys
-  - emid
-  - quality
-  - tkquality
-  - track_valid
-  - track_rinv
-  - track_phizero
-  - track_tanl
-  - track_z0
-  - z0
-  - track_d0
-  - track_chi2rphi
-  - track_chi2rz
-  - track_bendchi2
-  - track_hitpattern
-  - track_nstubs
-  - track_mvaother
-  - mass
-  - isPhoton
-  - isElectronPlus
-  - isElectronMinus
-  - isMuonPlus
-  - isMuonMinus
-  - isNeutralHadron
-  - isChargedHadronPlus
-  - isChargedHadronMinus
-  - isfilled
-  - jet_multijetscore_b
-  - jet_multijetscore_bkg
-  - jet_multijetscore_gluon
-  - jet_multijetscore_charm
-  - jet_multijetscore_taup
-  - jet_multijetscore_taum
-  - jet_multijetscore_muon
-  - jet_multijetscore_electron
-  - jet_multijetscore_regression
-  - jet_pt_phys
-  - jet_genmatch_pt
 
 baseline_hardware_inputs:
   - pt
@@ -86,28 +12,22 @@ baseline_hardware_inputs:
   - isMuonPlus
   - isMuonMinus
   - isNeutralHadron
-  - isChargedHadronPlus
-  - isChargedHadronMinus
+  - isChargedHadroncPlus
+  - isChargedHadroncMinus
   - z0
   - dxy
-  - isfilled
+  - isFilled
   - puppiweight
   - emid
   - quality
 
 extra_fields:
-  - jet_pt_phys
-  - jet_genmatch_pt
+  - obj_pt
+  - event
+  - luminosityBlock
+  - run
 
-extra_emulation_fields:
-  - jet_multijetscore_b
-  - jet_multijetscore_light
-  - jet_multijetscore_gluon
-  - jet_multijetscore_charm
-  - jet_multijetscore_taup
-  - jet_multijetscore_taum
-  - jet_multijetscore_muon
-  - jet_multijetscore_electron
-  - jet_multijetscore_regression
-  - jet_pt_phys
-  - jet_genmatch_pt
+global:
+  - obj_pt
+  - obj_eta
+  - obj_hwQual

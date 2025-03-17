@@ -52,22 +52,21 @@ def prune_model(model, num_samples):
     pruned_model = tfmot.sparsity.keras.prune_low_magnitude(model, **pruning_params)
 
     pruned_model.compile(optimizer='adam',
-                            loss={'prune_low_magnitude_jet_id_output': 'categorical_crossentropy', 'prune_low_magnitude_pT_output': tf.keras.losses.Huber()},
-                            metrics = {'prune_low_magnitude_jet_id_output': 'categorical_accuracy', 'prune_low_magnitude_pT_output': ['mae', 'mean_squared_error']},
-                            weighted_metrics = {'prune_low_magnitude_jet_id_output': 'categorical_accuracy', 'prune_low_magnitude_pT_output': ['mae', 'mean_squared_error']})
+                            loss={'prune_low_magnitude_main_output': 'categorical_crossentropy'},
+                            metrics = {'prune_low_magnitude_main_output': 'categorical_accuracy'},
+                            weighted_metrics = {'prune_low_magnitude_main_output': 'categorical_accuracy'})
 
     print(pruned_model.summary())
 
     return pruned_model
 
-def save_test_data(out_dir, X_test, y_test, truth_pt_test, reco_pt_test, class_labels):
+def save_test_data(out_dir, X_test, X_global_test, y_test, class_labels):
 
     os.makedirs(os.path.join(out_dir,'testing_data'), exist_ok=True)
 
     np.save(os.path.join(out_dir, "testing_data/X_test.npy"), X_test)
+    np.save(os.path.join(out_dir, "testing_data/X_global_test.npy"), X_global_test)
     np.save(os.path.join(out_dir, "testing_data/y_test.npy"), y_test)
-    np.save(os.path.join(out_dir, "testing_data/truth_pt_test.npy"), truth_pt_test)
-    np.save(os.path.join(out_dir, "testing_data/reco_pt_test.npy"), reco_pt_test)
     with open(os.path.join(out_dir, "class_label.json"), "w") as f: json.dump(class_labels, f, indent=4) #Dump output variables
 
     print(f"Test data saved to {out_dir}")
@@ -82,11 +81,8 @@ def train_weights(y_train, truth_pt_train, class_labels, pt_flat_weighting=True)
     sample_weights = np.ones(num_samples)
 
     # Define pT bins
-    pt_bins = np.array([
-        15, 17, 19, 22, 25, 30, 35, 40, 45, 50,
-        60, 76, 97, 122, 154, 195, 246, 311,
-        393, 496, 627, 792, np.inf  # Use np.inf to cover all higher values
-    ])
+    pt_bins = np.array([5.,    6.,    7.,    9.,   12.,   15.,   19.,   27.,   43.,   89., np.inf])
+
     
     # Initialize counts per class per pT bin
     class_pt_counts = {}
@@ -136,30 +132,31 @@ def train(out_dir, percent, model_name):
     os.makedirs(out_dir)
 
     #Load the data, class_labels and input variables name, not really using input variable names to be honest
-    data_train, data_test, class_labels, input_vars, extra_vars = load_data("training_data/", percentage=percent)
+    data_train, data_test, class_labels, input_vars, extra_vars, global_vars = load_data("training_data/", percentage=percent)
     
     #Save input variables and extra variables metadata
     with open(os.path.join(out_dir, "input_vars.json"), "w") as f: json.dump(input_vars, f, indent=4) #Dump output variables
     with open(os.path.join(out_dir, "extra_vars.json"), "w") as f: json.dump(extra_vars, f, indent=4) #Dump output variables
+    with open(os.path.join(out_dir, "global_vars.json"), "w") as f: json.dump(global_vars, f, indent=4) #Dump output variables
 
     #Make into ML-like data for training
-    X_train, y_train, pt_target_train, truth_pt_train, reco_pt_train = to_ML(data_train, class_labels)
-
+    X_train, X_global_train, y_train = to_ML(data_train, class_labels, global_vars)
     #Save X_test, y_test, and truth_pt_test for plotting later
-    X_test, y_test, _, truth_pt_test, reco_pt_test = to_ML(data_test, class_labels)
-    save_test_data(out_dir, X_test, y_test, truth_pt_test, reco_pt_test, class_labels)
+    X_test, X_global_test, y_test = to_ML(data_test, class_labels, global_vars)
+    save_test_data(out_dir, X_test, X_global_test,  y_test, class_labels)
 
     #Calculate the sample weights for training
-    sample_weight = train_weights(y_train, truth_pt_train, class_labels)
+    sample_weight = train_weights(y_train, np.asarray(data_train['obj_pt']), class_labels)
 
     #Get input shape
     input_shape = X_train.shape[1:] #First dimension is batch size
+    global_shape = X_global_train.shape[1:]
     output_shape = y_train.shape[1:]
 
     #Dynamically get the model
     try:
         model_func = getattr(models, model_name)
-        model = model_func(input_shape, output_shape)  # Assuming the model function doesn't require additional arguments
+        model = model_func(input_shape, global_shape, output_shape)  # Assuming the model function doesn't require additional arguments
     except AttributeError:
         raise ValueError(f"Model '{model_name}' is not defined in the 'models' module.")
 
@@ -172,8 +169,8 @@ def train(out_dir, percent, model_name):
                  EarlyStopping(monitor='val_loss', patience=10),
                  ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5)]
 
-    history = pruned_model.fit({'model_input': X_train},
-                            {'prune_low_magnitude_jet_id_output': y_train, 'prune_low_magnitude_pT_output': pt_target_train},
+    history = pruned_model.fit({'model_input': X_train, 'model_global_input': X_global_train},
+                            {'prune_low_magnitude_main_output': y_train},
                             sample_weight=sample_weight,
                             epochs=EPOCHS,
                             batch_size=BATCH_SIZE,
