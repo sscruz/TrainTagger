@@ -26,6 +26,7 @@ extra_fields:
   - event
   - luminosityBlock
   - run
+  - obj_tkIso
 
 global:
   - obj_pt
