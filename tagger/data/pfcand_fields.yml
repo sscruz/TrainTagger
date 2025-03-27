@@ -20,6 +20,7 @@ baseline_hardware_inputs:
   - puppiweight
   - emid
   - quality
+  - dz
 
 extra_fields:
   - obj_pt
